@@ -1,0 +1,1469 @@
+<!-- Code from d3-graph-gallery.com -->
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<!-- Load d3.js -->
+<style>
+@import url(https://fonts.googleapis.com/earlyaccess/cwtexyen.css);
+</style>
+<script src="https://d3js.org/d3.v4.js" ></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<h1 style="color:#000000;font-family:Courier New;margin-left:50px; margin-top:30px" >MOVIE</h1>
+<h1 style="color:#d9d9d9;font-family:cwTeXYen;margin-left:500px; margin-top:20px; font-size:40px" >2020電影票房比較</h1>
+
+<select id="menu" style="color:#575353 ;margin-left:500px; font-size:17px">
+  <option value="0">(請選擇顯示項目)</option>
+  <option value="1">總票房</option>
+  <option value="2">國別</option>
+  <option value="3">月份</option>
+</select>
+<select id="menu2" style="color:#575353; font-size:17px"></select>
+
+<h1 id= "title" style="color:#d9d9d9;font-family:cwTeXYen;margin-left:50px; margin-top:20px; font-size:27px" >123</h1>
+<body style="background-color:#403b3b;">
+</body>
+
+
+<!-- Create a div where the graph will take place -->
+<div id="my_dataviz"></div>
+
+<script >
+//雙層選單
+$("#menu").change(function(){
+  switch (parseInt($(this).val())){
+		case 0: 
+      $("#menu2 option").remove();
+      break;
+
+		case 1: 
+      $("#menu2 option").remove();    
+      break;
+
+		case 2: 
+      $("#menu2 option").remove();
+      var array = [ "(請選擇國家)", "美國", "日本", "台灣", "韓國"  ];
+      //利用each遍歷array中的值並將每個值新增到Select中
+      $.each(array, function(i, val) {
+        $("#menu2").append($("<option value='" + array[i] + "'>" + array[i] + "</option>"));
+      });      
+      break;
+
+    case 3: 
+      $("#menu2 option").remove();
+      var array = [ "(請選擇月份)", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12" ];
+      //利用each遍歷array中的值並將每個值新增到Select中
+      $.each(array, function(i, val) {
+        $("#menu2").append($("<option value='" + array[i] + "'>" + array[i] + "</option>"));
+      });      
+      break;
+	}
+});
+
+// set the dimensions and margins of the graph
+var margin = {top: 30, right: 30, bottom: 40, left: 250},
+    width = 1500 - margin.left - margin.right,
+    height = 2500 - margin.top - margin.bottom;
+
+// append the svg object to the body of the page
+var svg ;
+
+// Parse the Data
+
+var morepage;
+var y;
+var datasrc = "https://raw.githubusercontent.com/CherryChiuyc/data/main/";
+var nowdata = "https://raw.githubusercontent.com/CherryChiuyc/data/main/top50.csv";
+
+
+window.addEventListener('load',function(){
+  var select_index = 0;
+  go(1, 0)
+
+  d3.select('#menu').on('change',function(){
+    
+    if(this.value==1){
+      nowdata = datasrc+"top50.csv";
+      console.log(nowdata)
+      re()
+      go(1, 0)
+    }
+    else if(this.value==2)
+    { 
+      select_index = 2;
+      //console.log(select_index)
+    }
+    else{
+      select_index = 3;
+    }
+  });
+
+  d3.select('#menu2').on('change',function(){
+    //console.log(this.value)
+    //coutry
+    if(this.value == "美國"){
+      nowdata = datasrc+"country/美國.csv";
+      re()
+      go(2, 0)
+    }else if(this.value == "日本"){
+      nowdata = datasrc+"country/日本.csv";
+      re()
+      go(2, 1)
+    }else if(this.value == "台灣"){
+      nowdata = datasrc+"country/中華民國.csv";
+      re()
+      go(2, 2)
+    }else if(this.value == "韓國"){
+      nowdata = datasrc+"country/南韓.csv";
+      re()
+      go(2, 3)
+    }
+
+    //month
+    if(this.value == "1"){
+      nowdata = datasrc+"month/1.csv";
+      re()
+      go(3, 1)
+    }else if(this.value == "2"){
+      nowdata = datasrc+"month/2.csv";
+      re()
+      go(3, 2)
+    }else if(this.value == "3"){
+      nowdata = datasrc+"month/3.csv";
+      re()
+      go(3, 3)
+    }else if(this.value == "4"){
+      nowdata = datasrc+"month/4.csv";
+      re()
+      go(3, 4)
+    }else if(this.value == "5"){
+      nowdata = datasrc+"month/5.csv";
+      re()
+      go(3, 5)
+    }else if(this.value == "6"){
+      nowdata = datasrc+"month/6.csv";
+      re()
+      go(3, 6)
+    }else if(this.value == "7"){
+      nowdata = datasrc+"month/7.csv";
+      re()
+      go(3, 7)
+    }else if(this.value == "8"){
+      nowdata = datasrc+"month/8.csv";
+      re()
+      go(3, 8)
+    }else if(this.value == "9"){
+      nowdata = datasrc+"month/9.csv";
+      re()
+      go(3, 9)
+    }else if(this.value == "10"){
+      nowdata = datasrc+"month/10.csv";
+      re()
+      go(3, 10)
+    }else if(this.value == "11"){
+      nowdata = datasrc+"month/11.csv";
+      re()
+      go(3, 11)
+    }else if(this.value == "12"){
+      nowdata = datasrc+"month/12.csv";
+      re()
+      go(3, 12)
+    }
+      
+  });
+//console.log(nowdata)
+
+
+},false);
+
+function re()
+{
+    d3.selectAll("svg").remove(); 
+    svg.selectAll("rect").remove(); 
+    svg.selectAll("image").remove(); 
+    svg.selectAll("g").remove(); 
+    svg.selectAll("path").remove(); 
+    svg.selectAll("text").remove();
+
+}
+
+ var title = [["年度票房總排名"],["美國電影票房排名", "日本電影票房排名", "台灣電影票房排名", "韓國電影票房排名"],
+      ["月份", "1月票房排名", "2月票房排名", "3月票房排名", "4月票房排名", "5月票房排名", "6月票房排名", "7月票房排名", "8月票房排名", "9月票房排名", "10月票房排名", "11月票房排名", "12月票房排名"]];
+
+function go(dtar, index)
+{
+
+  margin = {top: 30, right: 30, bottom: 450, left: 300},
+  width = 1500 - margin.left - margin.right;
+  if(dtar==1) height = 2500 - margin.top - margin.bottom;
+  if(dtar==2) height = 850;
+  if(dtar==3) height = 850;
+
+  svgt = d3.select("#title").datum(title)
+                .text(function(d){
+                    return d[dtar-1][index]
+                })
+
+  svg = d3.select("#my_dataviz")
+  .append("svg")
+  .attr("width", width + margin.left + margin.right)
+  .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")");
+
+d3.csv(nowdata, function(data) {
+  console.log(data);
+  // Add X axis
+  var d0 = [];
+      data.map(function(d) { if(dtar==1 || dtar==2)var t = parseInt(d["累計銷售票數"].replace(/,/g,''), 10); if(dtar==3)var t = parseInt(d["月累計票房"].replace(/,/g,''), 10); d0.push(t);})
+
+  var x = d3.scaleLinear()
+    .domain([0, d3.max(d0)+50000])
+    .range([ 0, width-100]);
+  svg.append("g")
+    .attr("transform", "translate(0," + height + ")")
+//    .call(d3.axisBottom(x))
+    .selectAll("text")
+      .attr("transform", "translate(-10,0)rotate(-45)")
+      .style("text-anchor", "end");
+
+
+  // Y axis
+  var k=0; var lim = 900;
+   y = d3.scaleBand()
+    .range([ 0, height ])
+    .domain(data.map(function(d) { k++; if(k<=lim){return d["中文片名"]; }   }))
+    .padding(.1);
+  svg.append("g")
+    //.call(d3.axisLeft(y))
+    
+  
+  k = 0;
+  //Bars
+  svg.selectAll("myRect")
+    .data(data)
+    .enter()
+    .append("rect")
+    .attr("x", x(0) )
+    .attr("y", function(d) {  if(k<=lim) return y(d["中文片名"]);})
+    .attr("width", function(d) { if(dtar==1 || dtar==2)var t = parseInt(d["累計銷售票數"].replace(/,/g,''), 10); if(dtar==3)var t = parseInt(d["月累計票房"].replace(/,/g,''), 10); return x(t);} )
+    .attr("height", y.bandwidth() )
+    .attr("fill", function(d) {
+               var s ; 
+               if(d["國別地區"] == "美國") return "#00bbf9" ;
+               else if(d["國別地區"] == "日本") return "#f07167" ;
+               else if(d["國別地區"] == "中華民國") return "#ffcb69" ;
+               else if(d["國別地區"] == "南韓") return "#2ec4b6" ;
+               else return "#fdfcdc";
+             }) 
+   
+  svg.selectAll("numtext")
+    .data(data)
+    .enter()
+    .append("text")
+    .attr("x", function(d) { if(dtar==1 || dtar==2) var t = parseInt(d["累計銷售票數"].replace(/,/g, ''), 10); if(dtar==3) var t = parseInt(d["月累計票房"].replace(/,/g, ''), 10);return x(t);})
+    .attr("y", function(d) { return y(d["中文片名"]) + y.bandwidth()/2 + 4;})
+    .attr("font-size" , "18px")
+    .attr("font-family", "Courier New")
+    //.attr("text-anchor", "end")
+    .attr("fill", "#f2f2f2")
+    .text(function(d) { if(dtar==1 || dtar==2) return d["累計銷售票數"];if(dtar==3) return d["月累計票房"];})
+    
+  svg.selectAll("nametext")
+    .data(data)
+    .enter()
+    .append("text")
+    .attr("x", "-10px")
+    .attr("y", function(d) { return y(d["中文片名"]) + y.bandwidth()/2 + 4;})
+    .attr("font-size" , "18px")
+    .attr("font-family", "cwTeXYen")
+    .attr("text-anchor", "end")
+    .attr("fill", "#f2f2f2")
+    .text(function(d) { if(k<=lim)return d["中文片名"];else k=0;})
+    .on("click", open)
+    .on("mouseover",fo)
+    .on("mouseout",function(f){d3.select(this).style("fill", "#f2f2f2")})
+    //.on("mouseover",function(f){ console.log("mouseover"); d3.select(this).select("text").style("fill", "red");})
+    
+
+    function fo()
+    {
+      console.log("hover");
+      d3.select(this).style("fill", "orange").style("cursor", "pointer");
+    }
+
+
+
+    
+    var name; 
+    var flag =0;
+    morepage = svg.append("g")
+    var picw; 
+    //morepage.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+function open() {
+    //这里我使用了jquery,dom操作感觉比较方便
+    if(flag)  close(morepage); 
+    
+    yoffset = y(d3.select(this).text())
+    w = 700 , h = 500, p = 250, m = 20 , texth = 150
+
+    morepage.selectAll("divv")
+    .data(data)
+    .enter()
+    .append("rect")
+    //.attr("preserveAspectRatio","xMinYMin slice")
+    .attr("width", w)
+    .attr("height", h )
+    .attr("fill", "#FFEFEE")
+    .attr("x",0)
+    .attr("y",0+yoffset)
+
+    var pichref = "https://raw.githubusercontent.com/CherryChiuyc/data/main/poster/";
+    var number = hash(d3.select(this).text());
+    if(number == 606 || number == 642){
+      pichref += hash(d3.select(this).text())+".JPG"
+    }else{
+      pichref += hash(d3.select(this).text())+".jpg"
+    }
+    
+    morepage.selectAll("pic")
+    .data(data)
+    .enter()
+    .append("image")
+    //.append("rect")
+    .attr("width", p-2*m)
+    .attr("height", h-3*m - texth )
+    .attr("fill", "#FEFAEE")
+    .attr("x",0+m+3)
+    .attr("y",0+yoffset+m)
+    .attr("xlink:href", pichref)
+
+    morepage.selectAll("pictextrect")
+    .data(data)
+    .enter()
+    .append("rect")
+    .attr("width", p-2*m)
+    .attr("height", texth-m )
+    .attr("fill", "wheat")
+    .attr("x",0+m+3)
+    .attr("y",0+yoffset + h-m - texth)
+    
+
+    var str = [];
+    var text = morepage.append("text")
+    var target = d3.select(this).text();
+    data.map(function(d) { 
+          //console.log(d["中文片名"],target )
+          if(d["中文片名"]==target)
+          {
+            str.push("片名: "+d["中文片名"]);
+            str.push("地區: "+d["國別地區"]);
+            str.push("上映日期: "+d["上映日期"]);
+            str.push("最大上映院數: "+d["上映院數"])
+            str.push("累計售票數: "+d["累計銷售票數"]);
+            str.push("累計銷售金額: "+d["累計銷售金額"]);
+          } 
+      })
+    //console.log(str)
+
+    morepage.selectAll("text")
+    .attr("x", 0+m+3 +10)
+    .attr("y", 0+yoffset + h-m - texth)
+    .attr("fill","black")
+
+    text.selectAll("tspan")
+    .data(str)
+    .enter()
+    .append("tspan")
+    .attr("font-size","0.9em")
+    .attr("font-family", "cwTeXYen")
+    .attr("x",text.attr("x")) .attr("dy","1.3em") .text(function(d){ return d; });
+
+
+    console.log(typeof d3.select(this).text())
+    console.log(hash(d3.select(this).text()))
+    
+    morepage.selectAll("cross")
+    .data(data)
+    .enter()
+    .append("image")
+    .attr("xlink:href", "https://img.yao51.com/jiankangtuku/cppkgnckv.jpeg")
+    .on("click",close)
+    .attr("x",w-30)
+    .attr("y",0+yoffset)
+    .attr("width", 30)
+    .attr("height", 30 )
+    .attr("fill", "#F9bFF2")
+    .attr("cursor", "pointer")
+
+    href = "https://raw.githubusercontent.com/CherryChiuyc/data/main/movie/";
+    href = href + hash(d3.select(this).text()) + ".csv";
+    drawline(yoffset,href,w,h);
+    flag = 1;
+}
+
+function close()
+{   
+    morepage.selectAll("rect").remove(); 
+    morepage.selectAll("image").remove(); 
+    morepage.selectAll("g").remove(); 
+    morepage.selectAll("path").remove(); 
+    morepage.selectAll("text").remove();
+    flag = 0;
+}
+
+
+    // .attr("x", function(d) { return x(d.Country); })
+    // .attr("y", function(d) { return y(d.Value); })
+    // .attr("width", x.bandwidth())
+    // .attr("height", function(d) { return height - y(d.Value); })
+    // .attr("fill", "#69b3a2")
+
+})
+}
+
+function drawline(yoffset,href,w,h){
+
+    mg = {top: 40, right: 30, bottom: 40, left: 300};
+    
+    linechart = morepage.append("g")
+    yoffset = yoffset+mg.top
+    linechart.attr("transform","translate(" + mg.left + "," +yoffset+ ")")
+
+    //console.log(href)
+    d3.csv(href, function(data) {
+
+      width = w-350;
+      height = h-2*(mg.top+10) ;
+      // List of groups (here I have one group per column)
+      //var allGroup = ["累計銷售票數", "銷售票數"]
+
+      // Reformat the data: we need an array of arrays of {x, y} tuples
+      // var dataReady = allGroup.map( function(grpName) { // .map allows to do something for each element of the list
+      //   return {
+      //     name: grpName,
+      //     values: data.map(function(d) {
+      //       console.log(+d[grpName])
+      //       return {time: d["陰德克斯"], value: +d[grpName]};
+      //     })
+      //   };
+      // });
+      // I strongly advise to have a look to dataReady with
+      // console.log(dataReady)
+
+      // A color scale: one color for each group
+      // var myColor = d3.scaleOrdinal()
+      //   .domain(allGroup)
+      //   .range(d3.schemeCategory10);
+
+
+      var d1max = [],d2max = [],d2cnt=0;
+      data.map(function(d) { d1max.push(parseInt(d["銷售票數"].replace(/,/g, ''), 10)); var s = String(d["week"]); d2max.push(s[4]+s[5]+"/"+s[6]+s[7]); d2cnt++;    })
+      //data.map(function(d) { var s = String(d["week"]); d2max.push(s[4]+s[5]+s[6]+[7])})
+
+      // Add X axis --> it is a date format
+      var lx = d3.scaleLinear()
+        //.domain([0,26])
+        .domain([0,d2cnt])
+        .range([ 0, width]);
+
+      linechart.append("g")
+        //.attr("transform", "translate(0," + height + ")")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(lx)
+                .tickFormat(item => d2max[item])
+          );
+
+      // Add Y axis
+
+      var ly = d3.scaleLinear()
+        .domain( [0,d3.max(d1max)+5000])
+        //.domain( [0,d3.max(data,function(d){ return d["銷售票數"]; })])
+        .range([ height, 0 ]);
+      linechart.append("g")
+        .call(d3.axisLeft(ly));
+
+      // Add the lines
+      var line = d3.line()
+        .x(function(d) { return lx(d["陰德克斯"]) })
+        .y(function(d) { return ly(d["銷售票數"]) })
+      linechart.selectAll("myLines")
+        .data(data)
+        .enter()
+        .append("path")
+          .attr("d", function(d){var t = parseInt(d["銷售票數"].replace(/,/g, ''), 10); return line(t) } )
+          .attr("stroke", "red")
+          .style("stroke-width", 4)
+          .style("fill", "red")
+
+          //console.log("aaaa"+ly(657115))
+      // Add the points
+      linechart
+        // First we need to enter in a group
+        .selectAll("myDots")
+        .data(data)
+        .enter()
+          .append('g')
+          .style("fill", "red")
+        // Second we need to enter in the 'values' part of this group
+        .selectAll("myPoints")
+        .data(data)
+        .enter()
+        .append("circle")
+          .attr("cx", function(d) { return lx(d["陰德克斯"]) } )
+          .attr("cy", function(d) { var t = parseInt(d["銷售票數"].replace(/,/g, ''), 10); return ly(t);} )
+          .attr("r", 5)
+          .attr("stroke", "white")
+
+      // Add a legend at the end of each line
+      linechart
+        .selectAll("myLabels")
+        .data(data)
+        .enter()
+          .append('g')
+          .append("text")
+            // .datum(function(d) { return {name: d.name, value: d.values[d.values.length - 1]}; }) // keep only the last value of each time series
+            .attr("transform", function(d) { var t = parseInt(d["銷售票數"].replace(/,/g, ''), 10); return "translate(" + lx(d["陰德克斯"])+ "," + ly(t) + ")"; }) // Put the text at the position of the last point
+            .attr("x", 12) // shift the text a bit more right
+            //.text(function(d) { return "銷售票數"; })
+            .style("fill", "red")
+            .style("font-size", 15)
+
+    })
+}
+// set the dimensions and margins of the graph
+// append the svg object to the body of the page
+// var svg = d3.select("#my_dataviz")
+//   .append("svg")
+//     .attr("width", width + margin.left + margin.right)
+//     .attr("height", height + margin.top + margin.bottom)
+//   .append("g")
+//     .attr("transform",
+//           "translate(" + margin.left + "," + margin.top + ")");
+
+//Read the data
+function hash(s){
+ if(s=="1/2的魔法") return 0;
+ if(s=="108～海馬五郎的復仇與冒險～") return 1;
+ if(s=="1917") return 2;
+ if(s=="6號鬼病床") return 3;
+ if(s=="72小時前哨救援") return 4;
+ if(s=="85年的夏天") return 5;
+ if(s=="A+瞎妹") return 6;
+ if(s=="BREAK THE SILENCE: THE MOVIE") return 7;
+ if(s=="BRING THE SOUL: THE MOVIE") return 8;
+ if(s=="Cunningham 機遇之舞") return 9;
+ if(s=="Fate_stay night [Heaven's Feel] Ⅲ春櫻之歌") return 10;
+ if(s=="GIVEN~被贈與的未來 劇場版") return 11;
+ if(s=="Miss") return 12;
+ if(s=="PJ 哈維：戰地拾音錄") return 13;
+ if(s=="Re：從零開始的異世界生活-外傳篇章電影") return 14;
+ if(s=="TENET天能") return 15;
+ if(s=="《少女與戰車 最終章》第1+2話") return 16;
+ if(s=="《少女與戰車 最終章》第２話") return 17;
+ if(s=="《少女與戰車 總集篇4DX》-第63屆戰車道全國高中生大會") return 18;
+ if(s=="㊣麥肯齊金總理秘史♂") return 19;
+ if(s=="一報還一報") return 20;
+ if(s=="一家之煮") return 21;
+ if(s=="一罐子的美好人生") return 22;
+ if(s=="三八新娘憨子婿") return 23;
+ if(s=="下一站，托斯卡尼") return 24;
+ if(s=="不丹是教室") return 25;
+ if(s=="不傻不愛") return 26;
+ if(s=="不完美的正義") return 27;
+ if(s=="不愛鋼琴師") return 28;
+ if(s=="中央車站:數位修復版") return 29;
+ if(s=="亂鶯") return 30;
+ if(s=="二階堂家物語") return 31;
+ if(s=="交響狂人") return 32;
+ if(s=="亨利五世") return 33;
+ if(s=="人性爆走課") return 34;
+ if(s=="人皮咒") return 35;
+ if(s=="人造紀元：走進人類世") return 36;
+ if(s=="他們的自由年代") return 37;
+ if(s=="仲夏夜之夢") return 38;
+ if(s=="你好‧愛‧再見") return 39;
+ if(s=="你是豬") return 40;
+ if(s=="你的情歌") return 41;
+ if(s=="你的鳥兒會唱歌") return 42;
+ if(s=="來者弒客") return 43;
+ if(s=="來自深淵 深沉靈魂的黎明") return 44;
+ if(s=="依然相信") return 45;
+ if(s=="俘虜") return 46;
+ if(s=="信用詐欺師JP:公主篇") return 47;
+ if(s=="倒數反擊") return 48;
+ if(s=="假面病棟") return 49;
+ if(s=="假面騎士－ 令和時代的開端") return 50;
+ if(s=="兔嘲男孩") return 51;
+ if(s=="入魔") return 52;
+ if(s=="全境入侵") return 53;
+ if(s=="全境失控") return 54;
+ if(s=="全面啟動10周年紀念版") return 55;
+ if(s=="八月三十一日，我在奧斯陸") return 56;
+ if(s=="再次相遇的日子") return 57;
+ if(s=="再見箱舟") return 58;
+ if(s=="再見街貓BOB") return 59;
+ if(s=="再見，未成年") return 60;
+ if(s=="冤鴦大盜") return 61;
+ if(s=="冬天的故事 經典數位修復") return 62;
+ if(s=="刑警沒有假期") return 63;
+ if(s=="初心") return 64;
+ if(s=="初戀") return 65;
+ if(s=="別告訴她") return 66;
+ if(s=="刺激1995") return 67;
+ if(s=="刻在你心底的名字") return 68;
+ if(s=="前世情人的情人") return 69;
+ if(s=="劇場版 不起眼女主角培育法 Fine") return 70;
+ if(s=="劇場版 新幹線變形機器人-來自未來的神速ALFA-X") return 71;
+ if(s=="劇場版 白箱") return 72;
+ if(s=="劇場版 高校艦隊") return 73;
+ if(s=="動畫電影版 我想吃掉你的胰臟") return 74;
+ if(s=="北海小英雄") return 75;
+ if(s=="十二夜2：回到第零天") return 76;
+ if(s=="千年一問") return 77;
+ if(s=="千日千夜") return 78;
+ if(s=="午夜0時的吻") return 79;
+ if(s=="南山的部長們") return 80;
+ if(s=="卡卡囌卡卡衝") return 81;
+ if(s=="卡薩諾瓦的情人") return 82;
+ if(s=="危險的青春") return 83;
+ if(s=="原本以為只是手機掉了2：被囚禁的殺人魔") return 84;
+ if(s=="叔．叔") return 85;
+ if(s=="叢林拳霸") return 86;
+ if(s=="古曼童") return 87;
+ if(s=="古魯家族：新石代") return 88;
+ if(s=="另類神父") return 89;
+ if(s=="只想受到你的歡迎") return 90;
+ if(s=="只有悲傷才是美麗的") return 91;
+ if(s=="可不可以，你也剛好喜歡我") return 92;
+ if(s=="台北物語2-獲利者") return 93;
+ if(s=="同學麥娜絲") return 94;
+ if(s=="名偵探奶奶") return 95;
+ if(s=="名偵探柯南：紅之校外旅行 鮮紅篇&戀紅篇") return 96;
+ if(s=="吞噬") return 97;
+ if(s=="吸血黏土") return 98;
+ if(s=="吹哨奇案") return 99;
+ if(s=="吾子吾弟") return 100;
+ if(s=="咒冥曲") return 101;
+ if(s=="咒怨 電影版") return 102;
+ if(s=="哈囉少女") return 103;
+ if(s=="哥哥戀愛了，我怎麼辦!?") return 104;
+ if(s=="哥布林殺手：GOBLIN'S CROWN") return 105;
+ if(s=="啊，荒野 前篇") return 106;
+ if(s=="啊，荒野 後篇") return 107;
+ if(s=="喜從天降") return 108;
+ if(s=="喪屍來鬥陣") return 109;
+ if(s=="喬瑟與老虎、魚") return 110;
+ if(s=="單身三人行") return 111;
+ if(s=="噬血達琳") return 112;
+ if(s=="囚愛之家") return 113;
+ if(s=="國王與我") return 114;
+ if(s=="國際市場：半世紀的諾言") return 115;
+ if(s=="在你身邊") return 116;
+ if(s=="在黑暗中漫舞：20週年數位修復版") return 117;
+ if(s=="地下弒的秘密") return 118;
+ if(s=="地獄通話") return 119;
+ if(s=="坑爹大作戰") return 120;
+ if(s=="壞教慾 經典數位修復") return 121;
+ if(s=="壞教育") return 122;
+ if(s=="夏天的故事 經典數位修復") return 123;
+ if(s=="外星異種") return 124;
+ if(s=="夜半歌聲") return 125;
+ if(s=="夜山明") return 126;
+ if(s=="夜訪羅浮宮：達文西特展") return 127;
+ if(s=="大地蜜語") return 128;
+ if(s=="大整形家") return 129;
+ if(s=="大法師：公開完整版") return 130;
+ if(s=="大畫特務") return 131;
+ if(s=="大監獄行動") return 132;
+ if(s=="大鼻子情聖") return 133;
+ if(s=="大鼻子情聖(經典劇場)") return 134;
+ if(s=="天劫倒數") return 135;
+ if(s=="天后小助理") return 136;
+ if(s=="天鵝湖") return 137;
+ if(s=="太陽之家") return 138;
+ if(s=="失戀殺人：三角禁戀") return 139;
+ if(s=="失控少年兵團") return 140;
+ if(s=="失控特工") return 141;
+ if(s=="失眠的北風吹來愛情") return 142;
+ if(s=="失路人") return 143;
+ if(s=="奇蹟救援") return 144;
+ if(s=="奧斯卡配樂大師：亞歷山大戴斯培") return 145;
+ if(s=="奪命守門人") return 146;
+ if(s=="奪命隧道") return 147;
+ if(s=="奪魂索") return 148;
+ if(s=="女子漢又怎樣") return 149;
+ if(s=="女巫們") return 150;
+ if(s=="女王特大號") return 151;
+ if(s=="女聲我最美") return 152;
+ if(s=="女鬼橋") return 153;
+ if(s=="她們") return 154;
+ if(s=="她的名字叫薔薇") return 155;
+ if(s=="好萊塢殺人事件：曼森血案") return 156;
+ if(s=="如果我擁抱你請不要害怕") return 157;
+ if(s=="姊魅") return 158;
+ if(s=="娘娘腔日記") return 159;
+ if(s=="婊兄弟上路") return 160;
+ if(s=="婚姻大崩壞") return 161;
+ if(s=="媽！我阿榮啦") return 162;
+ if(s=="孤味") return 163;
+ if(s=="孩子的自白") return 164;
+ if(s=="宅在瘟疫蔓延時") return 165;
+ if(s=="守靈魘") return 166;
+ if(s=="安雅的回家路") return 167;
+ if(s=="完美嬌妻養成班") return 168;
+ if(s=="家靈") return 169;
+ if(s=="寂寞喧嘩") return 170;
+ if(s=="寂寞調香師") return 171;
+ if(s=="寄生上流：黑白版") return 172;
+ if(s=="密弒直播") return 173;
+ if(s=="寺山修司：明日在何方") return 174;
+ if(s=="尋愛夢工廠") return 175;
+ if(s=="尋找小魔女Doremi") return 176;
+ if(s=="導演先生的完美假期") return 177;
+ if(s=="小偷演員") return 178;
+ if(s=="小武 4K 數位修復版") return 179;
+ if(s=="小路與我的秘密驛站") return 180;
+ if(s=="小魔花") return 181;
+ if(s=="少年阿罕默德") return 182;
+ if(s=="就愛斷捨離") return 183;
+ if(s=="居禮夫人：放射永恆") return 184;
+ if(s=="屍人莊殺人事件") return 185;
+ if(s=="屍人診所") return 186;
+ if(s=="屍速列車 特別版") return 187;
+ if(s=="屍速列車：感染半島") return 188;
+ if(s=="岳父受死吧") return 189;
+ if(s=="工作細胞!!特別上映版 強『菌』來襲！人體腸道大騷動!") return 190;
+ if(s=="巧虎電影 英雄遊樂園") return 191;
+ if(s=="巴亞拉魔幻冒險") return 192;
+ if(s=="巴黎寂寞不打烊") return 193;
+ if(s=="帕華洛帝：世紀男高音") return 194;
+ if(s=="幸運女神") return 195;
+ if(s=="幻愛") return 196;
+ if(s=="廢宅人生") return 197;
+ if(s=="弒膽遊戲") return 198;
+ if(s=="彗星美人") return 199;
+ if(s=="影裏") return 200;
+ if(s=="彼得漢德克：我在森林，晚一點到") return 201;
+ if(s=="德州電鋸殺人狂前傳：皮面人") return 202;
+ if(s=="心靈咖啡館的驅魔師") return 203;
+ if(s=="急先鋒") return 204;
+ if(s=="性之劇藥") return 205;
+ if(s=="怨咒") return 206;
+ if(s=="怨鈴") return 207;
+ if(s=="怪物先生") return 208;
+ if(s=="怪胎") return 209;
+ if(s=="怵目驚魂28天") return 210;
+ if(s=="恐怖份子製造國度") return 211;
+ if(s=="悄悄告訴她 經典數位修復") return 212;
+ if(s=="悲慘世界") return 213;
+ if(s=="情慾對決") return 214;
+ if(s=="情攝大師") return 215;
+ if(s=="惡之畫") return 216;
+ if(s=="惡之華") return 217;
+ if(s=="惡在基地蔓延時") return 218;
+ if(s=="惡夜救援") return 219;
+ if(s=="惡棍英雄：死侍") return 220;
+ if(s=="惡童當街 經典重映") return 221;
+ if(s=="惡靈20") return 222;
+ if(s=="愛上變身情人") return 223;
+ if(s=="愛回來的那7天") return 224;
+ if(s=="愛在午夜希臘時") return 225;
+ if(s=="愛在日落巴黎時") return 226;
+ if(s=="愛在末路之境") return 227;
+ if(s=="愛在黎明破曉時") return 228;
+ if(s=="愛情人形") return 229;
+ if(s=="愛情列車長") return 230;
+ if(s=="愛情是什麼") return 231;
+ if(s=="愛情，是開始還是結束") return 232;
+ if(s=="愛是您·愛是我") return 233;
+ if(s=="愛美獎行動") return 234;
+ if(s=="愛麗絲與夢幻島") return 235;
+ if(s=="感官世界") return 236;
+ if(s=="慾望摩天輪") return 237;
+ if(s=="慾望街車") return 238;
+ if(s=="慾火烈愛") return 239;
+ if(s=="戀夏時光") return 240;
+ if(s=="戀愛倒帶中") return 241;
+ if(s=="戀愛好好說") return 242;
+ if(s=="戀愛與謊言") return 243;
+ if(s=="戀愛進行弒") return 244;
+ if(s=="戀戀琴聲") return 245;
+ if(s=="我不流行二十年") return 246;
+ if(s=="我們仍未知道那天所看見的花名 劇場版") return 247;
+ if(s=="我們的7日戰爭") return 248;
+ if(s=="我們的家不是我們的家") return 249;
+ if(s=="我們的相愛時光") return 250;
+ if(s=="我們的美好時光") return 251;
+ if(s=="我們與愛的距離") return 252;
+ if(s=="我出去醫下") return 253;
+ if(s=="我是大哥大!!劇場版") return 254;
+ if(s=="我的A級秘密") return 255;
+ if(s=="我的兒子是死刑犯") return 256;
+ if(s=="我的失蹤爸爸") return 257;
+ if(s=="我的媽媽開GAYBAR") return 258;
+ if(s=="我的學生都是配樂大師") return 259;
+ if(s=="我的寶貝男孩") return 260;
+ if(s=="我的爸媽好性福") return 261;
+ if(s=="我的粉紅人生") return 262;
+ if(s=="我的英雄學院劇場版：英雄新世紀") return 263;
+ if(s=="我，最親愛的") return 264;
+ if(s=="戰慄糖果屋") return 265;
+ if(s=="戰慄魔胎") return 266;
+ if(s=="戰爭中的鬼故事") return 267;
+ if(s=="戰鬥少女選擇者 劇場版") return 268;
+ if(s=="手塚治虫迷幻少女") return 269;
+ if(s=="打噴嚏") return 270;
+ if(s=="抓住救命稻草的野獸們") return 271;
+ if(s=="抽屍剝繭") return 272;
+ if(s=="拂曉") return 273;
+ if(s=="拉麵狂") return 274;
+ if(s=="拋掉書本到街上去") return 275;
+ if(s=="拾光人生") return 276;
+ if(s=="指揮巨星亞尼克") return 277;
+ if(s=="捉魂鏡") return 278;
+ if(s=="捕魔網") return 279;
+ if(s=="換人殺砍砍") return 280;
+ if(s=="搖擺艷夏") return 281;
+ if(s=="搖滾師匠：細野晴臣") return 282;
+ if(s=="搖滾變色龍：大衛鮑伊") return 283;
+ if(s=="搞鬼") return 284;
+ if(s=="搭火車旅行好吃驚") return 285;
+ if(s=="收屍人") return 286;
+ if(s=="放逐到詩的盡頭") return 287;
+ if(s=="放飛大丈夫") return 288;
+ if(s=="政客誠實中") return 289;
+ if(s=="教會") return 290;
+ if(s=="敢殺就來") return 291;
+ if(s=="整容液") return 292;
+ if(s=="數碼寶貝 LAST EVOLUTION 絆") return 293;
+ if(s=="新解釋．三國志") return 294;
+ if(s=="日暮") return 295;
+ if(s=="日本龐克五右衛門搖滾3") return 296;
+ if(s=="日間演奏會散場時") return 297;
+ if(s=="明信片謀殺案") return 298;
+ if(s=="明明會說話") return 299;
+ if(s=="明晚空中見") return 300;
+ if(s=="星之彩") return 301;
+ if(s=="星光王子 星光時尚秀 BEST10") return 302;
+ if(s=="星光王子 舞台Shiny Rose Stars") return 303;
+ if(s=="星星知我心") return 304;
+ if(s=="星際效應") return 305;
+ if(s=="春天的故事 經典數位修復") return 306;
+ if(s=="春情蕩漾") return 307;
+ if(s=="晚班") return 308;
+ if(s=="普立茲記者") return 309;
+ if(s=="曼哈頓戀舞曲") return 310;
+ if(s=="最初的晚餐") return 311;
+ if(s=="最後晚安曲") return 312;
+ if(s=="最後的情書") return 313;
+ if(s=="最瘋狂的旅程") return 314;
+ if(s=="朝鮮花美男") return 315;
+ if(s=="未來的我們") return 316;
+ if(s=="末日異戰") return 317;
+ if(s=="本來面目") return 318;
+ if(s=="李察朱威爾事件") return 319;
+ if(s=="杜立德") return 320;
+ if(s=="東京喰種S") return 321;
+ if(s=="東京教父:4K數位修復版") return 322;
+ if(s=="東邪西毒：終極版") return 323;
+ if(s=="柯俊雄的電影人生") return 324;
+ if(s=="棕櫚泉不思議") return 325;
+ if(s=="森林特攻隊：大腳丫家族") return 326;
+ if(s=="椿花散落") return 327;
+ if(s=="極地守護犬") return 328;
+ if(s=="極線生機") return 329;
+ if(s=="槍手養成班") return 330;
+ if(s=="樂在當下") return 331;
+ if(s=="正在相愛嗎?") return 332;
+ if(s=="死因無可疑") return 333;
+ if(s=="殘酷街頭：暴力實錄") return 334;
+ if(s=="殺不了的他和死不了的她") return 335;
+ if(s=="殺戮荒村") return 336;
+ if(s=="殺手撿到槍") return 337;
+ if(s=="殺機疑雲") return 338;
+ if(s=="水風景") return 339;
+ if(s=="永不放棄：詹姆斯艾利森") return 340;
+ if(s=="求婚好意外") return 341;
+ if(s=="汪星人的奇幻漂流") return 342;
+ if(s=="決戰最前線") return 343;
+ if(s=="沖繩豆腐之戀") return 344;
+ if(s=="法蒂瑪的奇蹟") return 345;
+ if(s=="派遣死神事件簿") return 346;
+ if(s=="流感") return 347;
+ if(s=="浪人47愁錢中") return 348;
+ if(s=="浴血劍客") return 349;
+ if(s=="海星") return 350;
+ if(s=="海邊的異邦人") return 351;
+ if(s=="海邊走走") return 352;
+ if(s=="海霧") return 353;
+ if(s=="消失的情人節") return 354;
+ if(s=="消失的星期三") return 355;
+ if(s=="淒厲人僧") return 356;
+ if(s=="淒厲人僧 前傳") return 357;
+ if(s=="深海擴散") return 358;
+ if(s=="深海終劫站") return 359;
+ if(s=="混沌之神") return 360;
+ if(s=="火口的二人") return 361;
+ if(s=="火線情深") return 362;
+ if(s=="火線獵殺令") return 363;
+ if(s=="烈火情人") return 364;
+ if(s=="無價之保") return 365;
+ if(s=="無聲") return 366;
+ if(s=="無聲救援") return 367;
+ if(s=="無聲革命") return 368;
+ if(s=="無間行者之生死潛行") return 369;
+ if(s=="焦燥") return 370;
+ if(s=="然後我們跳了舞") return 371;
+ if(s=="熊熊大作戰") return 372;
+ if(s=="熱帶雨") return 373;
+ if(s=="熱血合唱團") return 374;
+ if(s=="燒肉粽2019") return 375;
+ if(s=="爆裂魔神少女") return 376;
+ if(s=="牆內的房客") return 377;
+ if(s=="特別嘉賓") return 378;
+ if(s=="特務搞飛機") return 379;
+ if(s=="特斯拉") return 380;
+ if(s=="犬犬風塵") return 381;
+ if(s=="犬鳴村") return 382;
+ if(s=="狂飆一夢") return 383;
+ if(s=="狄更斯之塊肉餘生記") return 384;
+ if(s=="猛禽小隊: 小丑女大解放") return 385;
+ if(s=="猛鬼大師收工沒?") return 386;
+ if(s=="猛鬼樂園") return 387;
+ if(s=="獅子山上") return 388;
+ if(s=="玉子愛情故事") return 389;
+ if(s=="王牌辯士") return 390;
+ if(s=="玩命Online：雙槍對決") return 391;
+ if(s=="玩美女人 經典數位修復") return 392;
+ if(s=="現在，很想見你") return 393;
+ if(s=="現屍報") return 394;
+ if(s=="瑜珈怨") return 395;
+ if(s=="瑰麗卡萊爾：浮華紐約") return 396;
+ if(s=="甜心大叔") return 397;
+ if(s=="生為女人") return 398;
+ if(s=="用甜酒漱口") return 399;
+ if(s=="田園死神") return 400;
+ if(s=="異星佔領") return 401;
+ if(s=="異星物語") return 402;
+ if(s=="異端鳥") return 403;
+ if(s=="當愛再來的時候") return 404;
+ if(s=="疤面教父") return 405;
+ if(s=="瘋狂理髮師:倫敦首席惡魔剃刀手") return 406;
+ if(s=="皮爾卡登：迷戀未來的人") return 407;
+ if(s=="皮行者") return 408;
+ if(s=="皮諾丘的奇幻旅程") return 409;
+ if(s=="盜墓同盟") return 410;
+ if(s=="監幽") return 411;
+ if(s=="監禁100呎") return 412;
+ if(s=="盤索里拳手") return 413;
+ if(s=="盧米埃：光與影的故事") return 414;
+ if(s=="盧貝松之聖女貞德：數位修復版") return 415;
+ if(s=="看不見的目擊者") return 416;
+ if(s=="看不見的證人") return 417;
+ if(s=="真實") return 418;
+ if(s=="真情甲尬意") return 419;
+ if(s=="真愛裁會贏") return 420;
+ if(s=="真愛鄰距離") return 421;
+ if(s=="知道天空有多藍的人啊") return 422;
+ if(s=="破碎的擁抱 經典數位修復") return 423;
+ if(s=="破處") return 424;
+ if(s=="破．局") return 425;
+ if(s=="碧藍之海劇場版") return 426;
+ if(s=="祕密花園") return 427;
+ if(s=="祕密：夢想的力量") return 428;
+ if(s=="神之一手：鬼手篇") return 429;
+ if(s=="神力女超人1984") return 430;
+ if(s=="福島50英雄") return 431;
+ if(s=="秋天的故事 經典數位修復") return 432;
+ if(s=="秒速五公分") return 433;
+ if(s=="穿過瘟疫的荒原") return 434;
+ if(s=="築夢奇蹟") return 435;
+ if(s=="約會大作戰 赤黑新章：紅或白") return 436;
+ if(s=="約會大作戰 赤黑新章：虛或實") return 437;
+ if(s=="紅衣小女孩") return 438;
+ if(s=="紅鞋公主與七矮人") return 439;
+ if(s=="紐約茶館") return 440;
+ if(s=="純真誘惑") return 441;
+ if(s=="紙花") return 442;
+ if(s=="素人特工") return 443;
+ if(s=="紫羅蘭永恆花園電影版") return 444;
+ if(s=="紫蓮和城") return 445;
+ if(s=="紳士追殺令") return 446;
+ if(s=="終極自殺旅店") return 447;
+ if(s=="絕命大平台") return 448;
+ if(s=="絕命直播") return 449;
+ if(s=="絕地戰警FOR LIFE") return 450;
+ if(s=="絕殺慕尼黑") return 451;
+ if(s=="綁票追殺令") return 452;
+ if(s=="綠光 經典數位修復") return 453;
+ if(s=="綠洲：數位經典版") return 454;
+ if(s=="緝毒風暴") return 455;
+ if(s=="緣來想見妳") return 456;
+ if(s=="練愛iNG") return 457;
+ if(s=="總是有個人在愛你") return 458;
+ if(s=="罪人的控訴") return 459;
+ if(s=="罪樂園") return 460;
+ if(s=="罪：米開朗基羅") return 461;
+ if(s=="羅密歐與茱麗葉") return 462;
+ if(s=="羅密歐與茱麗葉(馬修．伯恩精選)") return 463;
+ if(s=="羊男的迷宮") return 464;
+ if(s=="美好拾光公司") return 465;
+ if(s=="美麗佳人歐蘭朵 跨世紀重映") return 466;
+ if(s=="翻供") return 467;
+ if(s=="老公不是人") return 468;
+ if(s=="老娘就要這麼活") return 469;
+ if(s=="聖女貞德再出征") return 470;
+ if(s=="聖羅蘭：時尚影子的人生") return 471;
+ if(s=="聖荷西謀殺案") return 472;
+ if(s=="聖雅各的天空") return 473;
+ if(s=="聲入奇境：經典配樂大師") return 474;
+ if(s=="聽教父的話") return 475;
+ if(s=="肥龍過江") return 476;
+ if(s=="腿") return 477;
+ if(s=="致命窺弒") return 478;
+ if(s=="舞台 刀劍亂舞 悲傳 結目不如歸") return 479;
+ if(s=="舞台劇 佐賀偶像是傳奇") return 480;
+ if(s=="艾瑪﹒") return 481;
+ if(s=="花木蘭") return 482;
+ if(s=="英國國家美術館：高更特展") return 483;
+ if(s=="草迷宮") return 484;
+ if(s=="菜英文沒在怕") return 485;
+ if(s=="菠蘿蜜") return 486;
+ if(s=="華氏11/9") return 487;
+ if(s=="萬花嬉春") return 488;
+ if(s=="蒼之亂") return 489;
+ if(s=="藍色恐懼：數位修復版") return 490;
+ if(s=="藥命時空") return 491;
+ if(s=="藥頭大媽") return 492;
+ if(s=="蘇州河") return 493;
+ if(s=="蘿莉破壞王") return 494;
+ if(s=="蚵豐村") return 495;
+ if(s=="蜈蚣降") return 496;
+ if(s=="蜜蜂與遠雷") return 497;
+ if(s=="蝙蝠俠：開戰時刻") return 498;
+ if(s=="蠟筆小新電影 激戰!塗鴉王國與差不多四勇者") return 499;
+ if(s=="血疫") return 500;
+ if(s=="血色羔羊") return 501;
+ if(s=="血衛") return 502;
+ if(s=="行動代號：熱狗") return 503;
+ if(s=="被告") return 504;
+ if(s=="被遺忘的人生") return 505;
+ if(s=="裝幀人生") return 506;
+ if(s=="複製柔伊") return 507;
+ if(s=="見鬼的戀愛季節") return 508;
+ if(s=="親愛的小孩") return 509;
+ if(s=="親愛的房客") return 510;
+ if(s=="親愛的殺手") return 511;
+ if(s=="親愛的莎瑪") return 512;
+ if(s=="親愛陌生人") return 513;
+ if(s=="角落小夥伴電影版：魔法繪本裡的新朋友") return 514;
+ if(s=="解密達文西") return 515;
+ if(s=="觸不到的愛") return 516;
+ if(s=="言葉之庭") return 517;
+ if(s=="訂製幸福滋味") return 518;
+ if(s=="託陰2：布拉姆回來了") return 519;
+ if(s=="記憶屋") return 520;
+ if(s=="記憶拼圖") return 521;
+ if(s=="詩情攝慾") return 522;
+ if(s=="詭妹") return 523;
+ if(s=="詭憶") return 524;
+ if(s=="說不出的告別") return 525;
+ if(s=="說再見前的30分鐘") return 526;
+ if(s=="說唱藝人：希望之聲") return 527;
+ if(s=="誰偷了班克西？") return 528;
+ if(s=="誰殺了唐吉訶德") return 529;
+ if(s=="諜影殺機") return 530;
+ if(s=="謊畫情人") return 531;
+ if(s=="謎夜拼圖") return 532;
+ if(s=="謎樣事件簿") return 533;
+ if(s=="謙虛的英雄") return 534;
+ if(s=="謝謝你") return 535;
+ if(s=="謝謝你愛過我") return 536;
+ if(s=="變種人") return 537;
+ if(s=="變身特務") return 538;
+ if(s=="讓我聽見你的聲音") return 539;
+ if(s=="賭博默示錄：最終遊戲") return 540;
+ if(s=="超\"人\"氣動物園") return 541;
+ if(s=="超危險駕駛") return 542;
+ if(s=="超完美社區") return 543;
+ if(s=="超能西蒙的奇幻旅程") return 544;
+ if(s=="超能追緝") return 545;
+ if(s=="辛比的怪怪屋 劇場版：幽靈獵人 天空大進擊") return 546;
+ if(s=="迷慾東京") return 547;
+ if(s=="迷走廣州") return 548;
+ if(s=="迷雁返家路") return 549;
+ if(s=="追殺胖老爹") return 550;
+ if(s=="追殺艾娃") return 551;
+ if(s=="追逐繁星的孩子") return 552;
+ if(s=="退休大贏家") return 553;
+ if(s=="逃") return 554;
+ if(s=="逃亡的女人") return 555;
+ if(s=="逃出夢幻島") return 556;
+ if(s=="逃出天堂島") return 557;
+ if(s=="逃出立法院") return 558;
+ if(s=="逃獄兄弟") return 559;
+ if(s=="逆者") return 560;
+ if(s=="這一刻，想見你") return 561;
+ if(s=="這一次不再錯過你") return 562;
+ if(s=="通靈少年2020") return 563;
+ if(s=="遇見世界上另一個你") return 564;
+ if(s=="遺落夢境") return 565;
+ if(s=="還有一些樹") return 566;
+ if(s=="里斯本的故事") return 567;
+ if(s=="重啟咲良田") return 568;
+ if(s=="重啟咲良田前篇") return 569;
+ if(s=="重啟咲良田後篇") return 570;
+ if(s=="重磅腥聞") return 571;
+ if(s=="重裝救援：全境獵殺") return 572;
+ if(s=="野雀之詩") return 573;
+ if(s=="金都") return 574;
+ if(s=="金魚俱樂部") return 575;
+ if(s=="銀翼殺手最終版") return 576;
+ if(s=="鋼鐵勳章") return 577;
+ if(s=="鋼鐵女孩：最後戰役") return 578;
+ if(s=="鋼鐵雨：深潛行動") return 579;
+ if(s=="鎖命佈局") return 580;
+ if(s=="鏡中驚魂") return 581;
+ if(s=="鐵線蟲入侵") return 582;
+ if(s=="鑰命監獄") return 583;
+ if(s=="長沙里之戰：被遺忘的英雄") return 584;
+ if(s=="閃耀的成人羅曼史") return 585;
+ if(s=="閃閃小超人電影版") return 586;
+ if(s=="閉嘴！彈琴") return 587;
+ if(s=="間諜速成班") return 588;
+ if(s=="阿公當家") return 589;
+ if(s=="阿基拉") return 590;
+ if(s=="阿基米德大戰") return 591;
+ if(s=="阿比阿弟尋歌大冒險") return 592;
+ if(s=="阿紫") return 593;
+ if(s=="附身符") return 594;
+ if(s=="陪你玩最大") return 595;
+ if(s=="陰兒") return 596;
+ if(s=="陰櫥") return 597;
+ if(s=="陰眼") return 598;
+ if(s=="隱形人") return 599;
+ if(s=="隱藏的畫家") return 600;
+ if(s=="雙面追緝") return 601;
+ if(s=="雙面遊戲") return 602;
+ if(s=="雨天 . 紐約") return 603;
+ if(s=="雲之彼端，約定的地方") return 604;
+ if(s=="雷曼兄弟三部曲") return 605;
+ if(s=="電影哆啦A夢：大雄的新恐龍") return 606;
+ if(s=="電影版 地獄少女") return 607;
+ if(s=="電影版 輝夜姬想讓人告白～天才們的戀愛頭腦戰～") return 608;
+ if(s=="電影音效傳奇：好萊塢之聲") return 609;
+ if(s=="靈異405號房") return 610;
+ if(s=="靈異孤兒院") return 611;
+ if(s=="靈魂急轉彎") return 612;
+ if(s=="青春催落去") return 613;
+ if(s=="非常母親") return 614;
+ if(s=="靠北少女") return 615;
+ if(s=="音速小子") return 616;
+ if(s=="響 - HIBIKI -") return 617;
+ if(s=="順其自然的日子") return 618;
+ if(s=="頭號粉絲") return 619;
+ if(s=="顫役輪迴") return 620;
+ if(s=="食人少年幫") return 621;
+ if(s=="食人錄") return 622;
+ if(s=="飢俄人妻") return 623;
+ if(s=="馗降：粽邪2") return 624;
+ if(s=="馬丁伊登") return 625;
+ if(s=="馬拉薩尼亞32號陰宅") return 626;
+ if(s=="馴悍記") return 627;
+ if(s=="驅魔直播") return 628;
+ if(s=="驚夢49天") return 629;
+ if(s=="高校棋蹟") return 630;
+ if(s=="高盧英雄歷險記：魔法藥水") return 631;
+ if(s=="高跟鞋 經典數位修復") return 632;
+ if(s=="鬼侍女") return 633;
+ if(s=="鬼屋實錄：惡魔之家") return 634;
+ if(s=="鬼巢") return 635;
+ if(s=="鬼弒訊") return 636;
+ if(s=="鬼才狂想曲") return 637;
+ if(s=="鬼滅之刃劇場版 無限列車篇") return 638;
+ if(s=="鬼爸爸") return 639;
+ if(s=="鬼眼逼人") return 640;
+ if(s=="鬼魅之家") return 641;
+ if(s=="魔物獵人") return 642;
+ if(s=="魔王的女兒") return 643;
+ if(s=="魔睡") return 644;
+ if(s=="魔髮精靈唱遊世界") return 645;
+ if(s=="魔鬼對決") return 646;
+ if(s=="魯邦三世 THE FIRST") return 647;
+ if(s=="鳳梧洞戰役") return 648;
+ if(s=="鳴鳥不飛：烏雲密布") return 649;
+ if(s=="鴿子在樹枝上沉思") return 650;
+ if(s=="鹿兒流浪記") return 651;
+ if(s=="麥路人") return 652;
+ if(s=="麻雀放浪記2020") return 653;
+ if(s=="黑暗戰域") return 654;
+ if(s=="黑暗騎士") return 655;
+ if(s=="黑暗騎士：黎明昇起") return 656;
+ if(s=="黑水風暴") return 657;
+ if(s=="黑色校規") return 658;
+}
+
+
+</script>
+
+
+<!-- 
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="author" content="oxxo.studio">
+  <meta name="copyright" content="oxxo.studio">
+  <title>SVG D3.js - 直條圖 ( 以登革熱數據為例 ) demo04 - OXXO.STUDIO</title>
+  <style>
+    h2{
+      margin:10px;
+    }
+    button{
+      border:none;
+      background:#ddd;
+    }
+    select{
+      margin:0 0 10px 5px;
+      font-size:16px;
+    }
+    #menu{
+      margin:0 0 10px 10px ;
+    }
+  </style>
+  <script src="/js/lib/d3.v3.min.js"></script>
+  <script>
+    window.addEventListener('load',function(){
+
+      d3.csv("tainan-dengue.csv", function(data) {
+
+        var area1 = d3.nest()
+        .key(function(d){
+          return d.區別;
+        })
+        .entries(data); 
+        choose(area1);
+
+        var area2 = d3.nest()
+        .key(function(d){
+          return d.里別;
+        })
+        .entries(data); 
+
+        d3.select('#menu').on('change',function(){
+
+          if(this.value==1){
+            choose(area1);
+          }else{
+            choose(area2);
+          }
+        });
+
+
+        function choose(area){
+
+          d3.select('#submenu').selectAll('option').remove();
+          d3.selectAll('svg').remove();
+
+          d3.select('#submenu').selectAll('option')
+            .data(area)
+            .enter()
+            .append('option')
+            .attr({
+              'value':function(d){
+                return d.key;
+              }
+            })
+            .text(function(d){
+              return d.key + ' ( ' +d.values.length+ ' )';
+            });
+
+
+          var dataMap = d3.map(area,function(d){return d.key;});
+          if(dataMap.has('關廟區')){
+            areaData = dataMap.get('關廟區');
+            draw(areaData.values);
+          }else if(dataMap.has('南花里')){
+            areaData = dataMap.get('南花里');
+            draw(areaData.values);
+          }
+
+          d3.select('#submenu')
+            .on('change',function(){
+              var dataMap = d3.map(area,function(d){return d.key;});
+              if(dataMap.has(this.value)){
+                areaData = dataMap.get(this.value);
+                draw(areaData.values);
+              }
+            });
+        }
+
+        function draw(drawData){
+
+          d3.selectAll('svg').remove();
+
+          var day = d3.nest()
+          .key(function(d){
+            return d.確診日;
+          })
+          .entries(drawData); 
+
+          for(var i=0; i<day.length; i++){
+            if(i<9){
+              day[i]._id = '0'+(i+1).toString();
+            }else{
+              day[i]._id = (i+1).toString();
+            }
+          }
+
+          var dayById = d3.nest()
+          .key(function(d){
+            return d._id;
+          }).sortKeys(d3.descending)
+          .entries(day); 
+
+          for(var j=0; j<dayById.length; j++){
+              dayById[j]._id = j+1;
+          }
+
+          var s = d3.select('body').append('svg')
+                    .attr({
+                      'width':400,
+                      'height':dayById.length*15+20
+                    }).style({
+                      'border':'1px solid #000',
+                      'margin':'0 11px'
+                    });
+          var rect = s.append('g')
+                      .attr({
+                        'id':'rect'
+                      });
+          var num = s.append('g')
+                      .attr({
+                        'id':'num'
+                      });
+          var date = s.append('g')
+                      .attr({
+                        'id':'date'
+                      });
+
+          rect.selectAll('rect')
+            .data(dayById)
+            .enter()
+            .append('rect')
+            .attr({
+              'width':function(d){
+                return d.values[0].values.length;
+              },
+              'height':10,
+              'fill':function(d){
+                if(d.values[0].values.length>150){
+                  return '#c00';
+                }else if(d.values[0].values.length>110&&d.values[0].values.length<=150){
+                  return '#f90';
+                }else if(d.values[0].values.length>60&&d.values[0].values.length<=110){
+                  return '#aa0';
+                }else if(d.values[0].values.length>20&&d.values[0].values.length<=60){
+                  return '#ac0';
+                }else{
+                  return '#6c0';
+                }
+              },
+              'x':100,
+              'y':function(d){
+                return d._id*15;
+              }
+            });
+
+          num.selectAll('text')
+            .data(dayById)
+            .enter()
+            .append('text')
+            .attr({
+              'fill':'#000',
+              'x':function(d){
+                return d.values[0].values.length+105;
+              },
+              'y':function(d){
+                return d._id * 15 + 10;
+              }
+            }).text(function(d){
+              return d.values[0].values.length;
+            }).style({
+              'font-size':'12px'
+            });
+
+          date.selectAll('text')
+            .data(dayById)
+            .enter()
+            .append('text')
+            .attr({
+              'fill':'#000',
+              'text-anchor': 'end',
+              'x':90,
+              'y':function(d){
+                return d._id * 15 + 10;
+              }
+            }).text(function(d){
+              return d.values[0].values[0].確診日;
+            }).style({
+              'font-size':'12px'
+            });
+        }
+      });
+
+    },false);
+  </script>
+</head>
+
+<body>
+  <h2>台南市登革熱病例長條圖</h2>
+  <select id="menu">
+    <option value="1">行政區</option>
+    <option value="2">里</option>
+  </select>
+  <select id="submenu">
+  </select>
+  <br>
+
+
+
+  <style>
+  #info {
+    position: fixed;
+    z-index: 999;
+    bottom: 20px;
+    left: 0px;
+    background: #222;
+    padding: 20px 30px;
+    color: #fff;
+    box-shadow: rgba(0, 0, 0, .5) 0 0 10px;
+    border-radius: 0 5px 5px 0;
+  }
+  
+  #info a {
+    color: #0bf;
+    transition: .2s;
+  }
+  
+  #info a:hover {
+    color: #6df;
+  }
+  </style>
+  <div id="info">相關參考：<a id="infoLink" href="#" target="_blank"></a></div>
+  <script>
+  var href = location.href;
+  var page = href.split("demo/");
+  var name = page[1].split("-demo")[0];
+  var title = document.querySelector('title').innerHTML;
+  document.getElementById('infoLink').setAttribute('href', '/articles/' + name + '.html');
+  document.getElementById('infoLink').innerHTML = title.split("demo")[0];
+  </script>
+</body>
+
+</html>
+ -->
